@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preposition Pal 📚</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #22222f;
+      --border: #2e2e3e;
+      --accent: #7c5cd8;
+      --accent2: #a78bfa;
+      --user-bubble: #7c5cd8;
+      --bot-bubble: #22222f;
+      --text: #e8e8f0;
+      --muted: #8888a8;
+      --green: #34d399;
+      --red: #f87171;
+      --radius: 18px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .avatar {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--accent), #3b82d4);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .header-info h1 { font-size: 16px; font-weight: 700; }
+    .header-info p  { font-size: 12px; color: var(--muted); }
+    .status-dot {
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      margin-left: auto;
+      box-shadow: 0 0 6px var(--green);
+      flex-shrink: 0;
+      transition: background .3s;
+    }
+    .status-dot.escalated { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+    /* ── Chat area ── */
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+    #chat::-webkit-scrollbar { width: 4px; }
+    #chat::-webkit-scrollbar-track { background: transparent; }
+    #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── Messages ── */
+    .msg-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      max-width: 82%;
+      animation: fadeUp .25s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .msg-row.user { margin-left: auto; flex-direction: row-reverse; }
+    .msg-row.bot  { margin-right: auto; }
+
+    .bubble-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #3b82d4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      max-width: 100%;
+      word-break: break-word;
+      line-height: 1.55;
+    }
+    .msg-row.user .bubble {
+      background: var(--user-bubble);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .msg-row.bot .bubble {
+      background: var(--bot-bubble);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-row.bot .bubble.escalate-card {
+      border-color: var(--red);
+      background: #1e1010;
+    }
+
+    /* ── Markdown ── */
+    .bubble strong { color: var(--accent2); font-weight: 700; }
+    .bubble em     { color: #c4b5fd; font-style: italic; }
+    .bubble code   { background: #12121a; padding: 1px 5px; border-radius: 4px; font-size: 13px; color: var(--green); }
+    .bubble table  { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 13px; }
+    .bubble th, .bubble td { border: 1px solid var(--border); padding: 5px 10px; text-align: left; }
+    .bubble th { background: var(--surface2); color: var(--accent2); }
+    .bubble ol, .bubble ul { padding-left: 18px; margin-top: 4px; }
+    .bubble li { margin-bottom: 3px; }
+    .bubble p  { margin-bottom: 6px; }
+    .bubble p:last-child { margin-bottom: 0; }
+    .bubble h1, .bubble h2, .bubble h3 { color: var(--accent2); margin: 6px 0 4px; }
+    .bubble a { color: var(--accent2); }
+
+    /* ── Escalation call button ── */
+    .call-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 9px 18px;
+      background: #22131a;
+      border: 1.5px solid var(--red);
+      border-radius: 24px;
+      color: var(--red);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .call-btn:hover { background: #2e181f; }
+
+    /* ── Typing indicator ── */
+    #typing {
+      display: none;
+      align-items: flex-end;
+      gap: 8px;
+      max-width: 82%;
+      margin-right: auto;
+    }
+    .typing-bubble {
+      background: var(--bot-bubble);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      border-bottom-left-radius: 4px;
+      padding: 12px 16px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      background: var(--muted);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .2s; }
+    .dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30%            { transform: translateY(-6px); }
+    }
+
+    /* ── Quick replies ── */
+    #quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 16px 10px;
+    }
+    .qr-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--accent2);
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .qr-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* ── Input bar ── */
+    #input-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #user-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 10px 18px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      resize: none;
+      max-height: 120px;
+      overflow-y: auto;
+      line-height: 1.5;
+      transition: border-color .2s;
+    }
+    #user-input::placeholder { color: var(--muted); }
+    #user-input:focus { border-color: var(--accent); }
+
+    #send-btn {
+      width: 42px; height: 42px;
+      background: var(--accent);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background .15s, transform .1s;
+    }
+    #send-btn:hover { background: #6d4dc7; }
+    #send-btn:active { transform: scale(.92); }
+    #send-btn svg { fill: #fff; width: 18px; height: 18px; }
+
+    /* ── Reset button ── */
+    #reset-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: border-color .15s, color .15s;
+    }
+    #reset-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── Responsive ── */
+    @media (min-width: 640px) {
+      #chat         { padding: 24px calc(50% - 300px); }
+      #quick-replies{ padding: 0 calc(50% - 300px) 10px; }
+      #input-bar    { padding: 14px calc(50% - 300px); }
+      header        { padding: 14px calc(50% - 300px); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="avatar">📚</div>
+  <div class="header-info">
+    <h1>Preposition Pal</h1>
+    <p>English Tutor · Academic Support</p>
+  </div>
+  <div class="status-dot" id="status-dot" title="Online"></div>
+</header>
+
+<div id="chat"></div>
+
+<div id="typing">
+  <div class="bubble-avatar">📚</div>
+  <div class="typing-bubble">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  </div>
+</div>
+
+<div id="quick-replies"></div>
+
+<div id="input-bar">
+  <button id="reset-btn" title="Start over">↺ Reset</button>
+  <textarea id="user-input" rows="1" placeholder="Ask me anything about English…"></textarea>
+  <button id="send-btn" title="Send">
+    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+  </button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════
+const HUMAN_PHONE = '+01158592808';
+const BOT_DELAY_MS = 700; // simulated typing delay
+
+// ═══════════════════════════════════════════════════════════════
+// ENGINE — full rule-based chatbot (no server needed)
+// ═══════════════════════════════════════════════════════════════
+
+const ENGLISH_TOPICS = [
+  'preposition','noun','verb','adjective','adverb','tense','grammar',
+  'sentence','paragraph','vocabulary','spelling','punctuation','clause',
+  'pronoun','conjunction','article','determiner','passive','active',
+  'reading','writing','listening','speaking','comprehension','essay',
+  'idiom','phrasal verb','modal','conditional','reported speech',
+  'direct speech','indirect speech','subject','predicate','object',
+  'syntax','morphology','phonics','intonation','stress','syllable',
+];
+
+const EXPLANATIONS = {
+  preposition:`**Prepositions** tell us about relationships — position, time, direction, etc.\n\nCommon ones: *in, on, at, by, for, with, about, between, through*\n\nQuick rule:\n- **Place** → "The book is *on* the table."\n- **Time** → "See you *at* 3 PM / *on* Monday / *in* June."\n- **Direction** → "Walk *through* the door."\n\n🔑 Gen Z tip: Think of prepositions as GPS tags — they locate things in space or time.`,
+
+  tense:`**Tenses** show *when* something happens.\n\n| Tense | Example |\n|---|---|\n| Simple present | "She **studies** every day." |\n| Present continuous | "She **is studying** right now." |\n| Simple past | "She **studied** yesterday." |\n| Present perfect | "She **has studied** for two hours." |\n| Simple future | "She **will study** tomorrow." |\n\n🔑 Tip: Focus on *why* you're choosing a tense, not just the form.`,
+
+  noun:`**Nouns** are naming words — people, places, things, or ideas.\n\n- *Concrete*: cat, table, school\n- *Abstract*: happiness, freedom, love\n- *Proper*: London, Emma, Monday (always capitalised)\n- *Collective*: a *flock* of birds, a *team* of players\n\n🔑 Tip: If you can put "the" or "a" in front of a word, it's probably a noun.`,
+
+  verb:`**Verbs** are action or state words — the engine of every sentence.\n\n- *Action*: run, write, laugh\n- *State/linking*: be, seem, feel, become\n- *Auxiliary*: have, do, will, can, should\n\n🔑 Tip: Every complete sentence MUST have a verb. No verb = no sentence.`,
+
+  adjective:`**Adjectives** describe nouns.\n\n- "She has a *bright* idea." (before noun)\n- "The idea is *brilliant*." (after linking verb)\n- Comparative: "This is *easier* than that."\n- Superlative: "It's the *easiest* topic."\n\n🔑 Gen Z tip: Adjectives = the vibe check of a sentence.`,
+
+  adverb:`**Adverbs** modify verbs, adjectives, or other adverbs.\n\n- *How*: She speaks **clearly**.\n- *When*: He called **yesterday**.\n- *Where*: Leave it **here**.\n- *Degree*: That's **really** good.\n\n🔑 Tip: Many adverbs end in *-ly*, but not all (*fast*, *hard*, *well*).`,
+
+  conditional:`**Conditionals** express "if" situations.\n\n| Type | Form | Meaning |\n|---|---|---|\n| Zero | If + present, present | General truth |\n| First | If + present, will | Real future possibility |\n| Second | If + past, would | Unreal present/future |\n| Third | If + past perfect, would have | Unreal past |\n\n🔑 Example: "If I **study** hard, I **will** pass." (First conditional)`,
+
+  passive:`**Passive voice** shifts focus from doer to the action/receiver.\n\nActive → Passive:\n"The teacher **corrects** the papers." → "The papers **are corrected** by the teacher."\n\nFormula: **subject + be (correct tense) + past participle**\n\n🔑 Use passive when the *doer* is unknown, unimportant, or obvious.`,
+
+  essay:`**Essay writing** — a Gen Z-friendly breakdown:\n\n1. **Introduction** — hook + background + thesis statement\n2. **Body paragraphs** — 1 idea each: Point → Evidence → Explanation → Link\n3. **Conclusion** — restate thesis + summary + final thought\n\n🔑 Remember PEEL for body paragraphs:\n**P**oint → **E**vidence → **E**xplanation → **L**ink`,
+
+  vocabulary:`**Building vocabulary** strategically:\n\n- Learn words in **context**, not isolated lists\n- Use the word in **3 different sentences** to remember it\n- Group by **topic clusters** (food, emotions, academic verbs)\n- Review with **spaced repetition** (flashcards work!)\n\n🔑 Gen Z hack: Make memes or TikTok-style flashcards with the word — visual memory sticks.`,
+};
+
+const PRACTICE = {
+  preposition:[
+    "Fill in: 'She arrived ___ Monday ___ 9 o'clock ___ the morning.'",
+    "Correct the error: 'I'm interested *on* grammar.'",
+    "Write 3 sentences using *in, on, at* for time.",
+    "Choose: 'The cat jumped ___ (over/above) the wall.'",
+  ],
+  tense:[
+    "Put the verb in brackets into the correct tense: 'She (study) for three hours when I called.'",
+    "Spot the error: 'I am knowing the answer.'",
+    "Write a short paragraph (4 sentences) about your morning using at least 3 different tenses.",
+    "Translate to present perfect: 'She finished her essay an hour ago.'",
+  ],
+  noun:[
+    "Identify nouns: 'The team celebrated their victory with great joy.'",
+    "Is 'information' countable or uncountable? Why does it matter?",
+    "Write 2 sentences: one with a collective noun, one with an abstract noun.",
+  ],
+  verb:[
+    "Identify the main verb and any auxiliaries: 'She has been studying all day.'",
+    "Write 3 sentences using modal verbs: *should, might, must*.",
+    "Convert to negative and question form: 'They play football on Sundays.'",
+  ],
+  conditional:[
+    "Complete: 'If I ______ (know) the answer, I ______ (tell) you.' (2nd conditional)",
+    "What type of conditional? 'If you heat water to 100°C, it boils.'",
+    "Write your own example for each of the 4 conditional types.",
+  ],
+  essay:[
+    "Write a thesis statement for: 'Social media affects teenagers' mental health.'",
+    "Expand this point using PEEL: 'Reading improves vocabulary.'",
+    "Write an introduction (3–4 sentences) for: 'Should school uniforms be mandatory?'",
+  ],
+  default:[
+    "Can you give me a definition of the key term in your own words?",
+    "Write an example sentence using a concept from this topic.",
+    "What is one thing about this topic you find confusing? Let's break it down!",
+  ],
+};
+
+function detectTopic(text){
+  const l=text.toLowerCase();
+  return ENGLISH_TOPICS.find(t=>l.includes(t))||null;
+}
+function isHomeworkRequest(text){
+  const l=text.toLowerCase();
+  return [
+    /do\s+(my|this|the)\s+(homework|assignment|exam|test|quiz)/,
+    /write\s+(my|this|the)\s+(essay|assignment|report)/,
+    /answer\s+(this|these|my)\s+(question|questions|exam)/,
+    /complete\s+(my|this|the)\s+(assignment|homework|test)/,
+    /solve\s+(this|my)\s+(exam|test|assignment)/,
+    /give me the answers/,
+    /just\s+(give|write|do)\s+it\s+for\s+me/,
+  ].some(p=>p.test(l));
+}
+function isNonAcademic(text){
+  const l=text.toLowerCase();
+  return [
+    /\b(depress|sad|lonely|anxi|stress|mental health|suicid|hurt myself|cry|heartbreak)\b/,
+    /\b(relationship|boyfriend|girlfriend|crush|love life)\b/,
+    /\b(fight with|argument with)\b.*\b(friend|parent|family)\b/,
+    /i feel (so )?(lost|hopeless|worthless|empty)/,
+  ].some(p=>p.test(l));
+}
+function isGreeting(text){
+  return /^(hi|hello|hey|yo|sup|hiya|good (morning|afternoon|evening))[!.,]?$/i.test(text.trim());
+}
+function getExplanation(topic){
+  for(const k of Object.keys(EXPLANATIONS)){
+    if(topic&&topic.toLowerCase().includes(k)) return EXPLANATIONS[k];
+  }
+  return null;
+}
+function getPractice(topic){
+  for(const k of Object.keys(PRACTICE)){
+    if(k!=='default'&&topic&&topic.toLowerCase().includes(k)) return PRACTICE[k];
+  }
+  return PRACTICE.default;
+}
+
+// Special sentinel so UI knows to show escalation card
+const ESCALATE_SIGNAL = '%%ESCALATE%%';
+
+let session = { failCount:0, escalated:false, pendingIntent:null };
+
+function respond(text){
+  const input=text.trim();
+
+  if(session.escalated){
+    return ESCALATE_SIGNAL;
+  }
+
+  if(isGreeting(input)){
+    session.failCount=0;
+    return `Hey! 👋 I'm **Preposition Pal**, your English tutor.\n\nI can help you with:\n- 📖 Explaining English grammar topics\n- 🔢 Step-by-step breakdowns\n- ✏️ Practice questions\n\nWhat topic do you need help with today?`;
+  }
+
+  if(isHomeworkRequest(input)){
+    session.failCount=0;
+    return `I can't do that for you — completing homework or assignments yourself is a big part of actually learning! 📚\n\nBut I *can* help you **understand** the topic so you can do it yourself.\n\nI'm also connecting you to your teacher for extra guidance.\n\nWhat specifically are you stuck on?`;
+  }
+
+  if(isNonAcademic(input)){
+    session.escalated=true;
+    return ESCALATE_SIGNAL;
+  }
+
+  const wantsPractice=/practice|exercise|question|quiz|drill|test me|give me (some )?(questions?|problems?)/.test(input.toLowerCase());
+  const wantsExplain=/explain|what is|what are|how (do|does|to)|break.*down|help.*understand|tell me about|teach me|simple/.test(input.toLowerCase());
+  const topic=detectTopic(input);
+
+  if(session.pendingIntent&&!topic){
+    session.failCount+=1;
+    if(session.failCount>=2){
+      session.escalated=true;
+      return ESCALATE_SIGNAL;
+    }
+    return `Sorry, I don't quite understand. Could you tell me what subject this is about, or try asking in a different way?`;
+  }
+
+  if((wantsPractice||wantsExplain)&&!topic){
+    session.pendingIntent=wantsPractice?'practice':'explain';
+    session.failCount=0;
+    return `Sure — what subject or topic do you need help with?`;
+  }
+
+  if(topic){
+    session.failCount=0;
+    const intent=session.pendingIntent||(wantsPractice?'practice':wantsExplain?'explain':null);
+    session.pendingIntent=null;
+
+    if(intent==='practice'){
+      const qs=getPractice(topic);
+      const list=qs.map((q,i)=>`${i+1}. ${q}`).join('\n');
+      return `Here are some **practice questions** for **${topic}**:\n\n${list}\n\nTake your time — let me know if you want me to explain any of these! 💪`;
+    }
+
+    const explanation=getExplanation(topic);
+    if(explanation){
+      return `Here's a breakdown of **${topic}**:\n${explanation}\n\nWant some practice questions on this? Just ask! ✏️`;
+    }
+    return `Got it — you need help with **${topic}**!\n\nI don't have a pre-built explanation for that yet, but here's what I suggest:\n\n1. Tell me specifically what you're confused about.\n2. I'll break it down step by step.\n\nWhat's the tricky part? 🤔`;
+  }
+
+  session.failCount+=1;
+  if(session.failCount>=2){
+    session.escalated=true;
+    return ESCALATE_SIGNAL;
+  }
+  return `Sorry, I don't quite understand. Could you tell me what subject this is about, or try asking in a different way?`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MARKDOWN RENDERER
+// ═══════════════════════════════════════════════════════════════
+function renderMd(text){
+  let t = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // tables
+  t = t.replace(/^\|(.+)\|$/gm, row=>'<tr>'+row.slice(1,-1).split('|').map(c=>`<td>${c.trim()}</td>`).join('')+'</tr>');
+  t = t.replace(/(<tr>.*<\/tr>\n*)+/gs, match=>{
+    const rows=match.trim().split('\n');
+    const header=rows[0].replace(/<td>/g,'<th>').replace(/<\/td>/g,'</th>');
+    const body=rows.slice(2).join('\n');
+    return `<table><thead>${header}</thead><tbody>${body}</tbody></table>`;
+  });
+
+  t = t
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/^\d+\. (.+)$/gm,'<li>$1</li>')
+    .replace(/^[-•] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n*)+/g, match=>`<ul>${match}</ul>`);
+
+  t = t.split(/\n{2,}/).map(b=>b.startsWith('<')?b:`<p>${b.replace(/\n/g,'<br>')}</p>`).join('');
+  return t;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════════════
+const chatEl   = document.getElementById('chat');
+const inputEl  = document.getElementById('user-input');
+const typingEl = document.getElementById('typing');
+const qrEl     = document.getElementById('quick-replies');
+const dotEl    = document.getElementById('status-dot');
+
+const QUICK_REPLIES = [
+  'Explain prepositions 📌',
+  'Explain tenses ⏰',
+  'Practice questions ✏️',
+  'Help with essays 📝',
+  'Explain conditionals 🔀',
+];
+
+function showQuickReplies(){
+  qrEl.innerHTML='';
+  QUICK_REPLIES.forEach(label=>{
+    const btn=document.createElement('button');
+    btn.className='qr-btn';
+    btn.textContent=label;
+    btn.addEventListener('click',()=>{ qrEl.innerHTML=''; sendMessage(label); });
+    qrEl.appendChild(btn);
+  });
+}
+
+function appendMessage(role, text, isEscalate=false){
+  const row=document.createElement('div');
+  row.className=`msg-row ${role}`;
+  if(role==='bot'){
+    const av=document.createElement('div');
+    av.className='bubble-avatar'; av.textContent='📚';
+    row.appendChild(av);
+  }
+  const bubble=document.createElement('div');
+  bubble.className='bubble'+(isEscalate?' escalate-card':'');
+
+  if(isEscalate){
+    bubble.innerHTML=`
+      <p>That sounds like something outside my area — I'm here for academic English support only.</p>
+      <p>More importantly, what you're going through <strong>matters</strong>. 💙 Your teacher/mentor is ready to help you right now.</p>
+      <a class="call-btn" href="tel:${HUMAN_PHONE}">
+        📞 Call Teacher &nbsp;<strong>${HUMAN_PHONE}</strong>
+      </a>`;
+    dotEl.classList.add('escalated');
+  } else {
+    bubble.innerHTML = renderMd(text);
+  }
+
+  row.appendChild(bubble);
+  chatEl.appendChild(row);
+  chatEl.scrollTop=chatEl.scrollHeight;
+}
+
+function setTyping(on){
+  typingEl.style.display=on?'flex':'none';
+  if(on) chatEl.scrollTop=chatEl.scrollHeight;
+}
+
+function sendMessage(text){
+  text=text.trim();
+  if(!text) return;
+  appendMessage('user', text);
+  inputEl.value='';
+  inputEl.style.height='auto';
+  qrEl.innerHTML='';
+  setTyping(true);
+
+  setTimeout(()=>{
+    const reply=respond(text);
+    setTyping(false);
+    if(reply===ESCALATE_SIGNAL){
+      appendMessage('bot','',true);
+    } else {
+      appendMessage('bot', reply);
+      if(/Hey! 👋/.test(reply)||reply.length<140) showQuickReplies();
+    }
+  }, BOT_DELAY_MS);
+}
+
+// Auto-resize textarea
+inputEl.addEventListener('input',()=>{
+  inputEl.style.height='auto';
+  inputEl.style.height=Math.min(inputEl.scrollHeight,120)+'px';
+});
+
+// Enter to send
+inputEl.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(inputEl.value); }
+});
+document.getElementById('send-btn').addEventListener('click',()=>sendMessage(inputEl.value));
+
+// Reset
+document.getElementById('reset-btn').addEventListener('click',()=>{
+  session={ failCount:0, escalated:false, pendingIntent:null };
+  chatEl.innerHTML='';
+  qrEl.innerHTML='';
+  dotEl.classList.remove('escalated');
+  appendMessage('bot',"Hey! 👋 I'm **Preposition Pal**, your English tutor.\n\nI can help you with:\n- 📖 Explaining English grammar topics\n- 🔢 Step-by-step breakdowns\n- ✏️ Practice questions\n\nWhat topic do you need help with today?");
+  showQuickReplies();
+});
+
+// Boot
+appendMessage('bot',"Hey! 👋 I'm **Preposition Pal**, your English tutor.\n\nI can help you with:\n- 📖 Explaining English grammar topics\n- 🔢 Step-by-step breakdowns\n- ✏️ Practice questions\n\nWhat topic do you need help with today?");
+showQuickReplies();
+</script>
+</body>
+</html>
